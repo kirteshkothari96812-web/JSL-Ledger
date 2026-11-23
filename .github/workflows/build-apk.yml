@@ -28,6 +28,12 @@ jobs:
             yes | "$SDK_MGR" --licenses > /dev/null 2>&1 || true
           fi
 
+      - name: Cache debug keystore for consistent updates
+        uses: actions/cache@v4
+        with:
+          path: debug.keystore
+          key: jsl-debug-keystore-v1
+
       - name: Ensure debug keystore exists
         run: |
           if [ ! -f debug.keystore ]; then
