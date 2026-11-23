@@ -248,8 +248,9 @@ class JslViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun saveSheetUrl(url: String) {
-        sheetSyncService.saveWebAppUrl(url)
-        _sheetSyncConfig.value = _sheetSyncConfig.value.copy(webAppUrl = url.trim())
+        val normalized = AppsScriptSyncService.normalizeInputUrl(url)
+        sheetSyncService.saveWebAppUrl(normalized)
+        _sheetSyncConfig.value = _sheetSyncConfig.value.copy(webAppUrl = normalized)
     }
 
     fun setAutoPushEnabled(enabled: Boolean) {
@@ -257,9 +258,37 @@ class JslViewModel(application: Application) : AndroidViewModel(application) {
         _sheetSyncConfig.value = _sheetSyncConfig.value.copy(autoPush = enabled)
     }
 
+    fun testSheetConnection(urlOverride: String? = null, onResult: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            val targetUrl = AppsScriptSyncService.normalizeInputUrl(
+                urlOverride ?: _sheetSyncConfig.value.webAppUrl
+            )
+            if (targetUrl.isNotEmpty()) {
+                sheetSyncService.saveWebAppUrl(targetUrl)
+            }
+            _isSyncingSheet.value = true
+            val result = sheetSyncService.testConnection(targetUrl)
+            _isSyncingSheet.value = false
+            val isSuccess = result.isSuccess
+            val msg = result.fold(
+                onSuccess = { it },
+                onFailure = { it.message ?: "Connection failed" }
+            )
+            sheetSyncService.saveLastSyncStatus(msg, isSuccess)
+            _sheetSyncConfig.value = _sheetSyncConfig.value.copy(
+                webAppUrl = targetUrl,
+                lastSyncMessage = msg,
+                lastSyncSuccess = isSuccess
+            )
+            onResult(msg)
+        }
+    }
+
     fun pushToGoogleSheet(urlOverride: String? = null, onResult: (String) -> Unit = {}) {
         viewModelScope.launch {
-            val targetUrl = (urlOverride ?: _sheetSyncConfig.value.webAppUrl).trim()
+            val targetUrl = AppsScriptSyncService.normalizeInputUrl(
+                urlOverride ?: _sheetSyncConfig.value.webAppUrl
+            )
             if (targetUrl.isNotEmpty()) {
                 sheetSyncService.saveWebAppUrl(targetUrl)
             }
@@ -277,14 +306,16 @@ class JslViewModel(application: Application) : AndroidViewModel(application) {
                 rawBackupJson = backupJson
             )
             _isSyncingSheet.value = false
+            val isSuccess = result.isSuccess
             val msg = result.fold(
                 onSuccess = { it },
                 onFailure = { "Sync failed: ${it.message}" }
             )
-            sheetSyncService.saveLastSyncMessage(msg)
+            sheetSyncService.saveLastSyncStatus(msg, isSuccess)
             _sheetSyncConfig.value = _sheetSyncConfig.value.copy(
                 webAppUrl = targetUrl,
-                lastSyncMessage = msg
+                lastSyncMessage = msg,
+                lastSyncSuccess = isSuccess
             )
             onResult(msg)
         }
@@ -292,26 +323,33 @@ class JslViewModel(application: Application) : AndroidViewModel(application) {
 
     fun pullFromGoogleSheet(urlOverride: String? = null, onResult: (String) -> Unit = {}) {
         viewModelScope.launch {
-            val targetUrl = (urlOverride ?: _sheetSyncConfig.value.webAppUrl).trim()
+            val targetUrl = AppsScriptSyncService.normalizeInputUrl(
+                urlOverride ?: _sheetSyncConfig.value.webAppUrl
+            )
             if (targetUrl.isNotEmpty()) {
                 sheetSyncService.saveWebAppUrl(targetUrl)
             }
             _isSyncingSheet.value = true
             val pullResult = sheetSyncService.pullFromSheet(targetUrl)
+            var isSuccess = false
             val finalMessage = pullResult.fold(
                 onSuccess = { jsonText ->
                     repository.importFromJson(jsonText).fold(
-                        onSuccess = { count -> "Synced $count workers from Google Sheet!" },
+                        onSuccess = { count ->
+                            isSuccess = true
+                            "Synced $count workers from Google Sheet!"
+                        },
                         onFailure = { "Invalid sheet backup: ${it.message}" }
                     )
                 },
                 onFailure = { "Pull failed: ${it.message}" }
             )
             _isSyncingSheet.value = false
-            sheetSyncService.saveLastSyncMessage(finalMessage)
+            sheetSyncService.saveLastSyncStatus(finalMessage, isSuccess)
             _sheetSyncConfig.value = _sheetSyncConfig.value.copy(
                 webAppUrl = targetUrl,
-                lastSyncMessage = finalMessage
+                lastSyncMessage = finalMessage,
+                lastSyncSuccess = isSuccess
             )
             onResult(finalMessage)
         }

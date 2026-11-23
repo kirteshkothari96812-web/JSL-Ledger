@@ -430,6 +430,11 @@ fun JslLedgerApp(
             onDismiss = { showSheetSyncDialog = false },
             onSaveUrl = viewModel::saveSheetUrl,
             onToggleAutoPush = viewModel::setAutoPushEnabled,
+            onTestConnection = { url ->
+                viewModel.testSheetConnection(urlOverride = url) { msg ->
+                    showMessage(msg)
+                }
+            },
             onPushToSheet = { url ->
                 viewModel.pushToGoogleSheet(urlOverride = url) { msg ->
                     showMessage(msg)

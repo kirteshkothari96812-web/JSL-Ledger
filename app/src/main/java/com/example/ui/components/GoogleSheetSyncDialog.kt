@@ -16,12 +16,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -29,6 +34,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -61,6 +67,7 @@ fun GoogleSheetSyncDialog(
     onDismiss: () -> Unit,
     onSaveUrl: (String) -> Unit,
     onToggleAutoPush: (Boolean) -> Unit,
+    onTestConnection: (String) -> Unit,
     onPushToSheet: (String) -> Unit,
     onPullFromSheet: (String) -> Unit,
     onShowMessage: (String) -> Unit
@@ -90,10 +97,10 @@ fun GoogleSheetSyncDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Apne firm ke Google Sheet par Apps Script Web App URL se direct update & dono phones ke beech sync karein.",
+                    text = "Apne firm ke Google Sheet par Apps Script Web App URL (/exec) se direct update & dono phones ke beech sync karein.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -104,11 +111,58 @@ fun GoogleSheetSyncDialog(
                     label = { Text("Apps Script Web App URL") },
                     placeholder = { Text("https://script.google.com/macros/s/.../exec") },
                     singleLine = true,
+                    trailingIcon = {
+                        if (urlInput.isNotBlank()) {
+                            IconButton(
+                                onClick = { urlInput = "" },
+                                enabled = !isSyncing
+                            ) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear URL")
+                            }
+                        } else {
+                            IconButton(
+                                onClick = {
+                                    val clip = clipboard.getText()?.text.orEmpty()
+                                    if (clip.isNotBlank()) {
+                                        urlInput = AppsScriptSyncService.normalizeInputUrl(clip)
+                                    }
+                                },
+                                enabled = !isSyncing
+                            ) {
+                                Icon(Icons.Default.ContentPaste, contentDescription = "Paste URL")
+                            }
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("apps_script_url_input"),
                     shape = RoundedCornerShape(12.dp)
                 )
+
+                OutlinedButton(
+                    onClick = {
+                        val cleaned = AppsScriptSyncService.normalizeInputUrl(urlInput)
+                        urlInput = cleaned
+                        onSaveUrl(cleaned)
+                        onTestConnection(cleaned)
+                    },
+                    enabled = !isSyncing && urlInput.isNotBlank(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .testTag("test_sheet_link_button")
+                ) {
+                    if (isSyncing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(Icons.Default.NetworkCheck, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text("Test Link (Verify Connection)")
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -116,8 +170,10 @@ fun GoogleSheetSyncDialog(
                 ) {
                     Button(
                         onClick = {
-                            onSaveUrl(urlInput)
-                            onPushToSheet(urlInput)
+                            val cleaned = AppsScriptSyncService.normalizeInputUrl(urlInput)
+                            urlInput = cleaned
+                            onSaveUrl(cleaned)
+                            onPushToSheet(cleaned)
                         },
                         enabled = !isSyncing && hasWorkers && urlInput.isNotBlank(),
                         modifier = Modifier
@@ -125,23 +181,17 @@ fun GoogleSheetSyncDialog(
                             .height(48.dp)
                             .testTag("push_to_sheet_button")
                     ) {
-                        if (isSyncing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        } else {
-                            Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
-                        }
+                        Icon(Icons.Default.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
                         Text("Push Sheet")
                     }
 
                     FilledTonalButton(
                         onClick = {
-                            onSaveUrl(urlInput)
-                            onPullFromSheet(urlInput)
+                            val cleaned = AppsScriptSyncService.normalizeInputUrl(urlInput)
+                            urlInput = cleaned
+                            onSaveUrl(cleaned)
+                            onPullFromSheet(cleaned)
                         },
                         enabled = !isSyncing && urlInput.isNotBlank(),
                         modifier = Modifier
@@ -153,6 +203,14 @@ fun GoogleSheetSyncDialog(
                         Spacer(Modifier.width(6.dp))
                         Text("Pull Sync")
                     }
+                }
+
+                if (!hasWorkers) {
+                    Text(
+                        text = "Note: Abhi is phone me 0 workers hain, isliye 'Push Sheet' band hai. Pehle 1 worker add karein (ya 2nd phone par 'Pull Sync' dabaye).",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
                 Row(
@@ -171,7 +229,9 @@ fun GoogleSheetSyncDialog(
                     Switch(
                         checked = config.autoPush,
                         onCheckedChange = {
-                            onSaveUrl(urlInput)
+                            val cleaned = AppsScriptSyncService.normalizeInputUrl(urlInput)
+                            urlInput = cleaned
+                            onSaveUrl(cleaned)
                             onToggleAutoPush(it)
                         },
                         modifier = Modifier.testTag("auto_push_switch")
@@ -179,23 +239,45 @@ fun GoogleSheetSyncDialog(
                 }
 
                 if (config.lastSyncMessage.isNotBlank()) {
+                    val isOk = config.lastSyncSuccess
+                    val bgColor = when (isOk) {
+                        true -> ledgerColors.presentBg
+                        false -> MaterialTheme.colorScheme.errorContainer
+                        null -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                    }
+                    val textColor = when (isOk) {
+                        true -> ledgerColors.presentText
+                        false -> MaterialTheme.colorScheme.onErrorContainer
+                        null -> MaterialTheme.colorScheme.onPrimaryContainer
+                    }
                     Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        color = bgColor,
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = "Status: ${config.lastSyncMessage}",
+                        Row(
                             modifier = Modifier.padding(10.dp),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Icon(
+                                imageVector = if (isOk == false) Icons.Default.ErrorOutline else Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = textColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = config.lastSyncMessage,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = textColor
+                            )
+                        }
                     }
                 }
 
                 HorizontalDivider(color = ledgerColors.subtleDivider)
 
-                // Expandable Apps Script Setup Guide & Copy Code
                 Surface(
                     onClick = { showScriptGuide = !showScriptGuide },
                     shape = RoundedCornerShape(10.dp),
@@ -229,9 +311,9 @@ fun GoogleSheetSyncDialog(
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             text = "1. Firm ki Google Sheet me Extensions → Apps Script kholein.\n" +
-                                "2. Neeche diya code copy karke paste & Save karein.\n" +
-                                "3. Deploy → New deployment → Web app chunein (Execute as: Me, Who has access: Anyone).\n" +
-                                "4. Web App URL (/exec) copy karke apne aur bhai ke phone me upar paste karein.",
+                                "2. Purana saara code delete karke neeche diya naya code paste karein aur SAVE (Ctrl+S / Cmd+S) dabaye.\n" +
+                                "3. Deploy → New deployment → Type: Web app → Execute as: Me → Who has access: ANYONE chunein.\n" +
+                                "4. Authorize karke '/exec' wala Web app URL copy karein aur upar paste karke 'Test Link' dabaye.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -274,7 +356,9 @@ fun GoogleSheetSyncDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    onSaveUrl(urlInput)
+                    val cleaned = AppsScriptSyncService.normalizeInputUrl(urlInput)
+                    urlInput = cleaned
+                    onSaveUrl(cleaned)
                     onDismiss()
                 },
                 enabled = !isSyncing
