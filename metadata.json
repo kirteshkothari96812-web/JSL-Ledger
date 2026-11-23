@@ -1,0 +1,6 @@
+{
+  "name": "JSL Ledger",
+  "description": "Factory labor attendance, 26-day and daily wage salary calculation, and advance khata ledger for JSL Industries.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

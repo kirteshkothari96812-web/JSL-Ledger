@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">JSL Ledger</string>
+    <string name="brand_header">JSL Industries</string>
+    <string name="brand_subtitle">Attendance • Salary • Advance Khata</string>
+    <string name="nav_attendance">Hajri / Grid</string>
+    <string name="nav_workers">Workers</string>
+    <string name="nav_advance">Advance</string>
+    <string name="nav_summary">Salary Sheet</string>
+    <string name="action_add_worker">Add Worker</string>
+    <string name="action_add_advance">Add Advance</string>
+    <string name="action_export_json">Export JSON</string>
+    <string name="action_import_json">Import JSON</string>
+    <string name="action_export_csv">Export CSV</string>
+    <string name="action_print_summary">Print / PDF</string>
+    <string name="empty_workers_title">No Workers Added Yet</string>
+    <string name="empty_workers_subtitle">Tap Add Worker to register monthly (26-day) or daily wage staff for JSL Industries.</string>
+</resources>
