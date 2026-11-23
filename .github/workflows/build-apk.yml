@@ -19,11 +19,14 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Set up Android SDK & accept licenses
-        uses: android-actions/setup-android@v3
-
       - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses > /dev/null 2>&1 || true
+        run: |
+          ANDROID_SDK="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          mkdir -p "$ANDROID_SDK/licenses"
+          SDK_MGR=$(command -v sdkmanager || find "$ANDROID_SDK/cmdline-tools" -name sdkmanager 2>/dev/null | head -n 1 || true)
+          if [ -n "$SDK_MGR" ]; then
+            yes | "$SDK_MGR" --licenses > /dev/null 2>&1 || true
+          fi
 
       - name: Restore debug keystore
         run: |
