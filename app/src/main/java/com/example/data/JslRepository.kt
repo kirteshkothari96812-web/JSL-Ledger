@@ -318,6 +318,8 @@ class JslRepository(private val dao: JslDao) {
             "Monthly Salary",
             "Effective Per-Day Rate",
             "Present Days",
+            "Half Days",
+            "Payable Days",
             "Sunday P Days",
             "Absent Days",
             "Earned Salary",
@@ -338,6 +340,8 @@ class JslRepository(private val dao: JslDao) {
                 String.format(Locale.US, "%.2f", s.worker.monthlySalary),
                 String.format(Locale.US, "%.2f", s.effectiveDailyRate),
                 s.presentDays.toString(),
+                s.halfDays.toString(),
+                SalaryCalculator.formatDays(s.payableDays),
                 s.sundayPresentDays.toString(),
                 s.absentDays.toString(),
                 String.format(Locale.US, "%.2f", s.earnedSalary),
@@ -372,10 +376,11 @@ class JslRepository(private val dao: JslDao) {
                 }
             }
             val sunBadge = if (s.sundayPresentDays > 0) " (${s.sundayPresentDays} Sun)" else ""
+            val halfBadge = if (s.halfDays > 0) "<br/><small>${s.halfDays} Half = ${SalaryCalculator.formatDays(s.payableDays)} d</small>" else ""
             """
             <tr>
               <td><strong>${escapeHtml(s.worker.name)}</strong><br/><small>${escapeHtml(s.worker.payType.shortLabel)}</small></td>
-              <td class="num">${s.presentDays}$sunBadge</td>
+              <td class="num">${s.presentDays}$sunBadge$halfBadge</td>
               <td class="num">${s.absentDays}</td>
               <td class="num">${SalaryCalculator.formatInr(s.effectiveDailyRate)}</td>
               <td class="num">${SalaryCalculator.formatInr(s.earnedSalary)}</td>
@@ -418,7 +423,7 @@ class JslRepository(private val dao: JslDao) {
             <thead>
               <tr>
                 <th>Worker</th>
-                <th class="num">Present (P)</th>
+                <th class="num">Present / Half</th>
                 <th class="num">Absent (A)</th>
                 <th class="num">Rate/Day</th>
                 <th class="num">Earned</th>

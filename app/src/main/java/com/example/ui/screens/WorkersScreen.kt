@@ -418,6 +418,13 @@ private fun WorkerDirectoryCard(
                     bg = ledgerColors.presentBg,
                     fg = ledgerColors.presentText
                 )
+                if (summary.halfDays > 0) {
+                    MiniStatChip(
+                        label = "H: ${summary.halfDays}",
+                        bg = ledgerColors.halfDayBg,
+                        fg = ledgerColors.halfDayText
+                    )
+                }
                 MiniStatChip(
                     label = "A: ${summary.absentDays}",
                     bg = ledgerColors.absentBg,

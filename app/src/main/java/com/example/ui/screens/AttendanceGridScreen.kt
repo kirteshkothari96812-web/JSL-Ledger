@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.EventAvailable
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
@@ -117,11 +118,11 @@ fun AttendanceGridScreen(
                 modifier = Modifier.weight(0.9f)
             )
             SummaryMetricCard(
-                label = "Total P",
-                value = state.totalPresentMarks.toString(),
+                label = "Payable Days",
+                value = SalaryCalculator.formatDays(state.totalPayableDays),
                 containerColor = ledgerColors.presentBg,
                 contentColor = ledgerColors.presentText,
-                modifier = Modifier.weight(0.9f)
+                modifier = Modifier.weight(1.0f)
             )
             SummaryMetricCard(
                 label = "Net Payable",
@@ -184,11 +185,14 @@ fun AttendanceGridScreen(
 
         // Legend Strip
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             LegendChip("P", "Present", ledgerColors.presentBg, ledgerColors.presentText)
+            LegendChip("H", "Half Day", ledgerColors.halfDayBg, ledgerColors.halfDayText)
             LegendChip("A", "Absent", ledgerColors.absentBg, ledgerColors.absentText)
             LegendChip("—", "Unmarked", ledgerColors.unmarkedBg, ledgerColors.unmarkedText)
             LegendChip("SUN", "Sunday", ledgerColors.sundayHeaderBg, ledgerColors.sundayText)
@@ -218,7 +222,7 @@ fun AttendanceGridScreen(
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Text(
-                            text = "Worker (P / A)",
+                            text = "Worker (P/H/A)",
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
@@ -367,9 +371,10 @@ private fun AttendanceWorkerRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            val sunPart = if (summary.sundayPresentDays > 0) " (${summary.sundayPresentDays}S)" else ""
+            val sunPart = if (summary.sundayPresentDays > 0) "(${summary.sundayPresentDays}S)" else ""
+            val halfPart = if (summary.halfDays > 0) " • H:${summary.halfDays}" else ""
             Text(
-                text = "P:${summary.presentDays}$sunPart • A:${summary.absentDays}",
+                text = "P:${summary.presentDays}$sunPart$halfPart • A:${summary.absentDays}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -408,6 +413,7 @@ fun AttendanceCellDropdown(
 
     val (pillBg, pillText, pillCode) = when (status) {
         AttendanceStatus.PRESENT -> Triple(ledgerColors.presentBg, ledgerColors.presentText, "P")
+        AttendanceStatus.HALF_DAY -> Triple(ledgerColors.halfDayBg, ledgerColors.halfDayText, "H")
         AttendanceStatus.ABSENT -> Triple(ledgerColors.absentBg, ledgerColors.absentText, "A")
         AttendanceStatus.UNMARKED -> Triple(
             if (day.isSunday) ledgerColors.sundayHeaderBg.copy(alpha = 0.45f) else ledgerColors.unmarkedBg,
@@ -467,6 +473,27 @@ fun AttendanceCellDropdown(
                     onSelectStatus(AttendanceStatus.PRESENT)
                 },
                 modifier = Modifier.testTag("att_opt_P")
+            )
+            DropdownMenuItem(
+                text = {
+                    Text(
+                        text = "H — Half Day (आधा दिन ½)",
+                        fontWeight = FontWeight.SemiBold,
+                        color = ledgerColors.halfDayText
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = ledgerColors.halfDayText
+                    )
+                },
+                onClick = {
+                    expanded = false
+                    onSelectStatus(AttendanceStatus.HALF_DAY)
+                },
+                modifier = Modifier.testTag("att_opt_H")
             )
             DropdownMenuItem(
                 text = {

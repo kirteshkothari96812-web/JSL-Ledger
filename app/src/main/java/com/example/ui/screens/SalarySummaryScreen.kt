@@ -326,7 +326,9 @@ fun SalarySummaryScreen(
                 ) {
                     HeaderCell(text = "Worker Name", width = 132.dp, align = TextAlign.Start)
                     Row(modifier = Modifier.horizontalScroll(tableScrollState)) {
-                        HeaderCell(text = "Present (P)", width = 94.dp)
+                        HeaderCell(text = "Present (P)", width = 90.dp)
+                        HeaderCell(text = "Half (H)", width = 72.dp)
+                        HeaderCell(text = "Payable", width = 76.dp)
                         HeaderCell(text = "Absent (A)", width = 76.dp)
                         HeaderCell(text = "Rate / Day", width = 92.dp)
                         HeaderCell(text = "Earned (₹)", width = 104.dp)
@@ -373,13 +375,26 @@ fun SalarySummaryScreen(
                     }
                     Row(modifier = Modifier.horizontalScroll(tableScrollState)) {
                         val fPresent = state.filteredSummaries.sumOf { it.presentDays }
+                        val fHalf = state.filteredSummaries.sumOf { it.halfDays }
+                        val fPayable = state.filteredSummaries.sumOf { it.payableDays }
                         val fAbsent = state.filteredSummaries.sumOf { it.absentDays }
                         val fEarned = state.filteredSummaries.sumOf { it.earnedSalary }
                         val fAdvance = state.filteredSummaries.sumOf { it.totalAdvance }
                         val fNet = state.filteredSummaries.sumOf { it.netPayable }
 
-                        ValueCell(text = "$fPresent d", width = 94.dp, bold = true)
-                        ValueCell(text = "$fAbsent d", width = 76.dp, bold = true)
+                        ValueCell(text = "$fPresent", width = 90.dp, bold = true)
+                        ValueCell(
+                            text = "$fHalf",
+                            width = 72.dp,
+                            color = ledgerColors.halfDayText,
+                            bold = true
+                        )
+                        ValueCell(
+                            text = "${SalaryCalculator.formatDays(fPayable)}d",
+                            width = 76.dp,
+                            bold = true
+                        )
+                        ValueCell(text = "$fAbsent", width = 76.dp, bold = true)
                         ValueCell(text = "—", width = 92.dp)
                         ValueCell(text = SalaryCalculator.formatInr(fEarned), width = 104.dp, bold = true)
                         ValueCell(
@@ -519,8 +534,19 @@ private fun SummaryLedgerRow(
             }
             ValueCell(
                 text = presentLabel,
-                width = 94.dp,
+                width = 90.dp,
                 color = ledgerColors.presentText,
+                bold = true
+            )
+            ValueCell(
+                text = "${summary.halfDays}",
+                width = 72.dp,
+                color = if (summary.halfDays > 0) ledgerColors.halfDayText else MaterialTheme.colorScheme.onSurfaceVariant,
+                bold = summary.halfDays > 0
+            )
+            ValueCell(
+                text = SalaryCalculator.formatDays(summary.payableDays),
+                width = 76.dp,
                 bold = true
             )
             ValueCell(

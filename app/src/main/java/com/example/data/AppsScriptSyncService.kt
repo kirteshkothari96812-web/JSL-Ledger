@@ -122,6 +122,8 @@ class AppsScriptSyncService(context: Context) {
                             "Monthly Salary (₹)",
                             "Rate / Day (₹)",
                             "Present (P)",
+                            "Half Day (H)",
+                            "Payable Days",
                             "Sunday P",
                             "Absent (A)",
                             "Earned Salary (₹)",
@@ -140,6 +142,8 @@ class AppsScriptSyncService(context: Context) {
                                 roundTwo(s.worker.monthlySalary),
                                 roundTwo(s.effectiveDailyRate),
                                 s.presentDays,
+                                s.halfDays,
+                                roundTwo(s.payableDays),
                                 s.sundayPresentDays,
                                 s.absentDays,
                                 roundTwo(s.earnedSalary),
@@ -158,6 +162,8 @@ class AppsScriptSyncService(context: Context) {
                             "",
                             "",
                             summaries.sumOf { it.presentDays },
+                            summaries.sumOf { it.halfDays },
+                            roundTwo(summaries.sumOf { it.payableDays }),
                             summaries.sumOf { it.sundayPresentDays },
                             summaries.sumOf { it.absentDays },
                             roundTwo(summaries.sumOf { it.earnedSalary }),
@@ -169,7 +175,7 @@ class AppsScriptSyncService(context: Context) {
             }
 
             val attendanceRows = JSONArray().apply {
-                val header = mutableListOf("Worker Name", "Present (P)", "Absent (A)")
+                val header = mutableListOf("Worker Name", "Present (P)", "Half Day (H)", "Absent (A)")
                 days.forEach { d ->
                     header.add(if (d.isSunday) "${d.dayOfMonth} (Sun)" else "${d.dayOfMonth}")
                 }
@@ -177,7 +183,7 @@ class AppsScriptSyncService(context: Context) {
 
                 summaries.forEach { s ->
                     val attMap = attendanceLookup[s.worker.id].orEmpty()
-                    val row = mutableListOf<Any>(s.worker.name, s.presentDays, s.absentDays)
+                    val row = mutableListOf<Any>(s.worker.name, s.presentDays, s.halfDays, s.absentDays)
                     days.forEach { d ->
                         row.add((attMap[d.dateKey] ?: AttendanceStatus.UNMARKED).code)
                     }

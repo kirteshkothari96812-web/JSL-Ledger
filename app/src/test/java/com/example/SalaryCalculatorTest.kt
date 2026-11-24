@@ -116,6 +116,57 @@ class SalaryCalculatorTest {
     }
 
     @Test
+    fun halfDayCalculation_paysExactHalfPerDayRate() {
+        val dailyWorker = WorkerEntity(
+            id = 4L,
+            name = "Vikram",
+            payType = PayType.DAILY_WAGE,
+            dailyRate = 500.0
+        )
+        val days = SalaryCalculator.getMonthDays(2026, 11)
+        val attendance = mapOf(
+            days[0].dateKey to AttendanceStatus.PRESENT,
+            days[1].dateKey to AttendanceStatus.PRESENT,
+            days[2].dateKey to AttendanceStatus.HALF_DAY,
+            days[3].dateKey to AttendanceStatus.ABSENT
+        )
+        val summary = SalaryCalculator.calculateWorkerMonthlySummary(
+            worker = dailyWorker,
+            year = 2026,
+            month = 11,
+            days = days,
+            attendanceByDate = attendance,
+            workerAdvances = listOf(
+                AdvanceEntity(id = 10, workerId = 4L, dateKey = "2026-11-02", amount = 250.0)
+            )
+        )
+
+        assertEquals(2, summary.presentDays)
+        assertEquals(1, summary.halfDays)
+        assertEquals(1, summary.absentDays)
+        assertEquals(2.5, summary.payableDays, 0.001)
+        assertEquals(1250.0, summary.earnedSalary, 0.01) // 2*500 + 1*250
+        assertEquals(1000.0, summary.netPayable, 0.01)
+
+        val monthlyWorker = WorkerEntity(
+            id = 5L,
+            name = "Anil",
+            payType = PayType.MONTHLY_26,
+            monthlySalary = 13000.0 // 500/day
+        )
+        val monthlySummary = SalaryCalculator.calculateWorkerMonthlySummary(
+            worker = monthlyWorker,
+            year = 2026,
+            month = 11,
+            days = days,
+            attendanceByDate = mapOf(days[0].dateKey to AttendanceStatus.HALF_DAY),
+            workerAdvances = emptyList()
+        )
+        assertEquals(0.5, monthlySummary.payableDays, 0.001)
+        assertEquals(250.0, monthlySummary.earnedSalary, 0.01)
+    }
+
+    @Test
     fun indianCurrencyFormatting_handlesStandardAndLargeNumbers() {
         assertEquals("₹20,000", SalaryCalculator.formatInr(20000.0))
         assertEquals("₹1,25,000", SalaryCalculator.formatInr(125000.0))

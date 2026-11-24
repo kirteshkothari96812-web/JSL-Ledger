@@ -13,6 +13,7 @@ enum class PayType(val label: String, val shortLabel: String) {
 enum class AttendanceStatus(val code: String, val label: String) {
     UNMARKED("", "Unmarked"),
     PRESENT("P", "Present"),
+    HALF_DAY("H", "Half Day"),
     ABSENT("A", "Absent")
 }
 

@@ -67,3 +67,9 @@ val LedgerDarkTextSecondary = Color(0xFF9BA5B4)
 val SundayColumnDark = Color(0xFF2B2314)
 val SundayHeaderDark = Color(0xFF423212)
 val SundayTextDark = Color(0xFFFCD34D)
+
+// Half Day Semantic Colors
+val SkyHalfBgLight = Color(0xFFDBEAFE)
+val SkyHalfTextLight = Color(0xFF1D4ED8)
+val SkyHalfBgDark = Color(0xFF1E3A5F)
+val SkyHalfTextDark = Color(0xFF93C5FD)

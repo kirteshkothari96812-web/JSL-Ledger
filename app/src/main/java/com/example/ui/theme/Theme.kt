@@ -18,6 +18,8 @@ import androidx.compose.ui.platform.LocalContext
 data class LedgerExtendedColors(
     val presentBg: Color,
     val presentText: Color,
+    val halfDayBg: Color,
+    val halfDayText: Color,
     val absentBg: Color,
     val absentText: Color,
     val unmarkedBg: Color,
@@ -33,6 +35,8 @@ val LocalLedgerColors = staticCompositionLocalOf {
     LedgerExtendedColors(
         presentBg = EmeraldContainer,
         presentText = EmeraldTertiary,
+        halfDayBg = SkyHalfBgLight,
+        halfDayText = SkyHalfTextLight,
         absentBg = CrimsonContainer,
         absentText = CrimsonError,
         unmarkedBg = LedgerSurfaceVariant,
@@ -48,6 +52,8 @@ val LocalLedgerColors = staticCompositionLocalOf {
 private val LightLedgerColors = LedgerExtendedColors(
     presentBg = EmeraldContainer,
     presentText = EmeraldTertiary,
+    halfDayBg = SkyHalfBgLight,
+    halfDayText = SkyHalfTextLight,
     absentBg = CrimsonContainer,
     absentText = CrimsonError,
     unmarkedBg = LedgerSurfaceVariant,
@@ -62,6 +68,8 @@ private val LightLedgerColors = LedgerExtendedColors(
 private val DarkLedgerColors = LedgerExtendedColors(
     presentBg = EmeraldContainerDark,
     presentText = EmeraldTertiaryDark,
+    halfDayBg = SkyHalfBgDark,
+    halfDayText = SkyHalfTextDark,
     absentBg = CrimsonContainerDark,
     absentText = CrimsonErrorDark,
     unmarkedBg = LedgerDarkSurfaceVariant,

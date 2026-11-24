@@ -21,9 +21,12 @@ data class WorkerMonthlySummary(
     val year: Int,
     val month: Int,
     val presentDays: Int,
+    val halfDays: Int,
     val sundayPresentDays: Int,
+    val sundayHalfDays: Int,
     val absentDays: Int,
     val unmarkedDays: Int,
+    val payableDays: Double,
     val effectiveDailyRate: Double,
     val earnedSalary: Double,
     val full26DayReference: Double?,
@@ -56,6 +59,16 @@ object SalaryCalculator {
 
     fun dateKey(year: Int, month: Int, day: Int): String =
         String.format(Locale.US, "%04d-%02d-%02d", year, month, day)
+
+    fun formatDays(days: Double): String {
+        val roundedHalf = (days * 2.0).roundToLong() / 2.0
+        val whole = roundedHalf.toLong()
+        return if (abs(roundedHalf - whole) < 0.01) {
+            whole.toString()
+        } else {
+            String.format(Locale.US, "%.1f", roundedHalf)
+        }
+    }
 
     fun daysInMonth(year: Int, month: Int): Int {
         val cal = Calendar.getInstance()
@@ -125,7 +138,9 @@ object SalaryCalculator {
         workerAdvances: List<AdvanceEntity>
     ): WorkerMonthlySummary {
         var presentDays = 0
+        var halfDays = 0
         var sundayPresentDays = 0
+        var sundayHalfDays = 0
         var absentDays = 0
         var unmarkedDays = 0
 
@@ -135,13 +150,18 @@ object SalaryCalculator {
                     presentDays++
                     if (day.isSunday) sundayPresentDays++
                 }
+                AttendanceStatus.HALF_DAY -> {
+                    halfDays++
+                    if (day.isSunday) sundayHalfDays++
+                }
                 AttendanceStatus.ABSENT -> absentDays++
                 AttendanceStatus.UNMARKED -> unmarkedDays++
             }
         }
 
+        val payableDays = presentDays + (halfDays * 0.5)
         val rate = effectiveDailyRate(worker)
-        val earnedSalary = presentDays * rate
+        val earnedSalary = payableDays * rate
         val full26DayReference = if (worker.payType == PayType.MONTHLY_26) {
             if (worker.useCustomDailyRate && worker.dailyRate > 0.0) {
                 rate * 26.0
@@ -155,15 +175,20 @@ object SalaryCalculator {
         val netPayable = earnedSalary - totalAdvance
 
         val rateFormatted = formatInr(rate)
+        val daysExpression = if (halfDays > 0) {
+            "$presentDays P + $halfDays H (${formatDays(payableDays)} days)"
+        } else {
+            "$presentDays P"
+        }
         val breakdown = when (worker.payType) {
             PayType.MONTHLY_26 -> {
                 if (worker.useCustomDailyRate && worker.dailyRate > 0.0) {
-                    "$presentDays P × $rateFormatted/day (Custom override)"
+                    "$daysExpression × $rateFormatted/day (Custom override)"
                 } else {
-                    "$presentDays P × $rateFormatted/day (${formatInr(worker.monthlySalary)} ÷ 26)"
+                    "$daysExpression × $rateFormatted/day (${formatInr(worker.monthlySalary)} ÷ 26)"
                 }
             }
-            PayType.DAILY_WAGE -> "$presentDays P × $rateFormatted/day"
+            PayType.DAILY_WAGE -> "$daysExpression × $rateFormatted/day"
         }
 
         return WorkerMonthlySummary(
@@ -171,9 +196,12 @@ object SalaryCalculator {
             year = year,
             month = month,
             presentDays = presentDays,
+            halfDays = halfDays,
             sundayPresentDays = sundayPresentDays,
+            sundayHalfDays = sundayHalfDays,
             absentDays = absentDays,
             unmarkedDays = unmarkedDays,
+            payableDays = payableDays,
             effectiveDailyRate = rate,
             earnedSalary = earnedSalary,
             full26DayReference = full26DayReference,

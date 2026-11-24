@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EventAvailable
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -292,17 +293,24 @@ private fun SalaryBreakdownCard(summary: WorkerMonthlySummary) {
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 CountTile(
-                    label = "Present (P)",
+                    label = "Full (P)",
                     value = if (summary.sundayPresentDays > 0) {
-                        "${summary.presentDays} (${summary.sundayPresentDays} Sun)"
+                        "${summary.presentDays} (${summary.sundayPresentDays}S)"
                     } else {
                         "${summary.presentDays}"
                     },
                     bg = ledgerColors.presentBg,
                     fg = ledgerColors.presentText,
+                    modifier = Modifier.weight(1f)
+                )
+                CountTile(
+                    label = "Half (H)",
+                    value = "${summary.halfDays}",
+                    bg = ledgerColors.halfDayBg,
+                    fg = ledgerColors.halfDayText,
                     modifier = Modifier.weight(1f)
                 )
                 CountTile(
@@ -313,7 +321,7 @@ private fun SalaryBreakdownCard(summary: WorkerMonthlySummary) {
                     modifier = Modifier.weight(1f)
                 )
                 CountTile(
-                    label = "Unmarked",
+                    label = "Blank",
                     value = "${summary.unmarkedDays}",
                     bg = ledgerColors.unmarkedBg,
                     fg = ledgerColors.unmarkedText,
@@ -471,7 +479,7 @@ private fun MonthlyCalendarCard(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
-                text = "Day-by-Day Attendance (Tap any date to mark P / A)",
+                text = "Day-by-Day Attendance (Tap any date: P / H / A)",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -536,11 +544,13 @@ private fun DetailDayCell(
 
     val bg = when (status) {
         AttendanceStatus.PRESENT -> ledgerColors.presentBg
+        AttendanceStatus.HALF_DAY -> ledgerColors.halfDayBg
         AttendanceStatus.ABSENT -> ledgerColors.absentBg
         AttendanceStatus.UNMARKED -> if (day.isSunday) ledgerColors.sundayColumnBg else ledgerColors.unmarkedBg.copy(alpha = 0.6f)
     }
     val fg = when (status) {
         AttendanceStatus.PRESENT -> ledgerColors.presentText
+        AttendanceStatus.HALF_DAY -> ledgerColors.halfDayText
         AttendanceStatus.ABSENT -> ledgerColors.absentText
         AttendanceStatus.UNMARKED -> if (day.isSunday) ledgerColors.sundayText else ledgerColors.unmarkedText
     }
@@ -585,6 +595,14 @@ private fun DetailDayCell(
                 onClick = {
                     expanded = false
                     onSelect(AttendanceStatus.PRESENT)
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("H — Half Day (½)", color = ledgerColors.halfDayText, fontWeight = FontWeight.SemiBold) },
+                leadingIcon = { Icon(Icons.Default.Schedule, contentDescription = null, tint = ledgerColors.halfDayText) },
+                onClick = {
+                    expanded = false
+                    onSelect(AttendanceStatus.HALF_DAY)
                 }
             )
             DropdownMenuItem(

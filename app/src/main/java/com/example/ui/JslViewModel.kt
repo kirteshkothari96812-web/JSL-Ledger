@@ -44,6 +44,8 @@ data class JslUiState(
     val totalAdvance: Double = 0.0,
     val totalNetPayable: Double = 0.0,
     val totalPresentMarks: Int = 0,
+    val totalHalfDays: Int = 0,
+    val totalPayableDays: Double = 0.0,
     val sheetSyncConfig: SheetSyncConfig = SheetSyncConfig(),
     val isSyncingSheet: Boolean = false,
     val isLoading: Boolean = true
@@ -130,6 +132,8 @@ class JslViewModel(application: Application) : AndroidViewModel(application) {
             totalAdvance = summaries.sumOf { it.totalAdvance },
             totalNetPayable = summaries.sumOf { it.netPayable },
             totalPresentMarks = summaries.sumOf { it.presentDays },
+            totalHalfDays = summaries.sumOf { it.halfDays },
+            totalPayableDays = summaries.sumOf { it.payableDays },
             isLoading = false
         )
     }
